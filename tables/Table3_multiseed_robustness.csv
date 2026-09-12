@@ -1,0 +1,3 @@
+Test device,Naive MSE (mean),Naive MSE (std),Physics-informed MSE (mean),Physics-informed MSE (std),Percent change (mean),Percent change (std),Sign stability (seeds won out of 20)
+ibm_osprey (LOW-T1),7.04e-05,1.2e-04,6.85e-05,1.1e-04,-2.5,16.6,12
+ibm_sherbrooke (HIGH-T1),2.70e-05,2.1e-05,2.25e-05,1.9e-05,19.7,6.3,20

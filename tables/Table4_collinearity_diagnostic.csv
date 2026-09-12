@@ -1,0 +1,5 @@
+T2 jitter std (us),Resulting T1-T2 correlation r,ibm_osprey physics-informed change (%),ibm_sherbrooke physics-informed change (%)
+0 (natural),0.244,-14.1,13.5
+15,0.237,-6.2,17.8
+30,0.152,2.1,31.4
+60,0.169,9.7,-6.1

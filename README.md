@@ -8,7 +8,7 @@ that had hidden a significant effect in Section 7).
 - `paper/` — the manuscript (docx)
 - `src/` — all reproduction code (see src/CODE_README.md for run order)
 - `figures/` — every figure in the paper
-- `data/` — key result tables as CSV
+- `tables/` — key result tables as CSV
 - `dashboard/index.html` — open in any browser, no server needed
 
 ## Headline results
