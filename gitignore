@@ -1,0 +1,43 @@
+# Python cache and compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# IDE and editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# Generated outputs
+generated/
+build/
+dist/
+
+# Jupyter files
+.ipynb_checkpoints/
+
+# Coverage and test artifacts
+.coverage
+.coverage.*
+htmlcov/
+.pytest_cache/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example

@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+message: "If you use this repository, please cite the associated manuscript and software."
+title: "Physics-Anchored vs. Data-Driven Extrapolation of Superconducting-Qubit Dephasing Rates"
+type: software
+authors:
+  - family-names: Rafi
+    given-names: "Mezbah Uddin"
+    email: "info.murafi@gmail.com"
+repository-code: "https://github.com/murafi99/qubit-dephasing-extrapolation-pane-qubit-dephasing"
+url: "https://github.com/murafi99/qubit-dephasing-extrapolation-pane-qubit-dephasing"
+version: "1.0.0"
+date-released: "2026-09-12"
+license: MIT
+keywords:
+  - superconducting qubits
+  - qubit dephasing
+  - physics-informed machine learning
+  - data-driven extrapolation
+  - bias-variance analysis
+  - synthetic data
+  - reproducible research
+  - quantum noise modeling
+abstract: >
+  Synthetic-data proof-of-concept study comparing physics-anchored and
+  data-driven extrapolation of superconducting-qubit dephasing rates.
