@@ -1,6 +1,0 @@
-Device (generation),T1 (us),T2 (us),Role,Verified source
-ibm_torino (Heron r1),167.73,130.19,Training,"arXiv:2402.19293, Sec. II (exact match, re-verified)"
-ibm_fez (Heron),136.52,78.58,Training,"arXiv:2410.00916, summary table (corrected this revision)"
-ibm_marrakesh (Heron r2),188.55,113.97,Training,"arXiv:2504.15698, Table 1 (corrected this revision)"
-ibm_osprey (Osprey r1),88.35,58.73,Test: LOW-T1,arXiv:2410.00916 (re-verified)
-ibm_sherbrooke (Eagle r3),262.69,176.67,Test: HIGH-T1,arXiv:2410.00916 (re-verified)
