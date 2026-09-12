@@ -844,7 +844,7 @@ ax.set_title("Multi-seed robustness (N=20): the low-T1 effect is noise-dominated
              "only the high-T1 benefit is consistently signed", fontsize=9.5)
 ax.set_xlim(0.5, 2.5)
 fig.tight_layout()
-fig.savefig("figures_paper/multiseed_robustness.png", dpi=150)
+fig.savefig("figures/multiseed_robustness.png", dpi=150)
 plt.close(fig)
 
 fig, ax = plt.subplots(figsize=(7.0, 4.8))
@@ -868,9 +868,9 @@ ax.set_title("Multi-seed collinearity sweep: the low-T1 CI includes zero\n"
 ax.legend(fontsize=8, loc="center left")
 ax.set_xticks(jitter_levels)
 fig.tight_layout()
-fig.savefig("figures_paper/collinearity_multiseed.png", dpi=150)
+fig.savefig("figures/collinearity_multiseed.png", dpi=150)
 plt.close(fig)
-print("Saved figures_paper/collinearity_multiseed.png")
+print("Saved figures/collinearity_multiseed.png")
 
 print("\nSaved figures: telemetry_traces.png, confusion_matrix.png, "
       "regression_comparison.png, extrapolation_test.png, curvature_diagnostic.png")

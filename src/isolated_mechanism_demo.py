@@ -137,9 +137,9 @@ ax.set_title("Isolated single-variable mechanism: MSE of exact plug-in vs.\n"
              fontsize=9.5)
 ax.legend(fontsize=8, loc="upper right")
 fig.tight_layout()
-fig.savefig("figures_paper/isolated_mse_sweep.png", dpi=150)
+fig.savefig("figures/isolated_mse_sweep.png", dpi=150)
 plt.close(fig)
-print("\nSaved figures_paper/isolated_mse_sweep.png")
+print("\nSaved figures/isolated_mse_sweep.png")
 crossover_idx = np.where(np.diff(np.sign(mse_exact_sweep - mse_lin_sweep)))[0]
 if len(crossover_idx) > 0:
     print(f"Crossover point(s) at T1 ~= {T1_sweep[crossover_idx]}")
