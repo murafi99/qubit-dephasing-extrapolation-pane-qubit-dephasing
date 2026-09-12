@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Physics-Anchored vs. Data-Driven Extrapolation — Research Dashboard</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://cdnjs.cloudflare.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root{
+    --bg-void:#0A0E14;
+    --bg-panel:#121A23;
+    --bg-panel-raised:#1B2531;
+    --line:#26313D;
+    --accent-cold:#5CC8E8;
+    --accent-warm:#E8934A;
+    --accent-flag:#E85D6B;
+    --text-primary:#E8EDF2;
+    --text-muted:#7E8A99;
+    --text-dim:#4C5866;
+    --mono: 'IBM Plex Mono', monospace;
+    --sans: 'IBM Plex Sans', sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:var(--bg-void);color:var(--text-primary);font-family:var(--sans);}
+  body{
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size:48px 48px;
+    background-attachment:fixed;
+    background-position:-1px -1px;
+  }
+  a{color:var(--accent-cold);}
+  .wrap{display:flex;min-height:100vh;}
+
+  /* ---------- Left rail ---------- */
+  nav.rail{
+    width:220px;flex:0 0 220px;
+    background:rgba(10,14,20,0.92);
+    border-right:1px solid var(--line);
+    position:sticky;top:0;height:100vh;overflow-y:auto;
+    padding:28px 0 28px 0;
+  }
+  .rail-brand{
+    font-family:var(--mono);font-size:11px;letter-spacing:0.06em;
+    color:var(--text-dim);padding:0 20px 20px 20px;
+    border-bottom:1px solid var(--line);margin-bottom:14px;
+  }
+  .rail-brand b{color:var(--accent-cold);display:block;font-size:13px;margin-bottom:4px;}
+  .rail a{
+    display:flex;align-items:center;gap:10px;
+    padding:9px 20px;font-size:13px;color:var(--text-muted);
+    text-decoration:none;border-left:2px solid transparent;
+    transition:color .15s, border-color .15s, background .15s;
+  }
+  .rail a:hover{color:var(--text-primary);background:rgba(92,200,232,0.05);}
+  .rail a.active{color:var(--accent-cold);border-left-color:var(--accent-cold);background:rgba(92,200,232,0.06);}
+  .rail-dot{width:5px;height:5px;border-radius:50%;background:var(--text-dim);flex:0 0 auto;}
+  .rail a.active .rail-dot{background:var(--accent-cold);}
+
+  main{flex:1;min-width:0;padding:0;}
+  section{padding:56px 48px;border-bottom:1px solid var(--line);max-width:1180px;}
+  section:last-of-type{border-bottom:none;}
+
+  /* ---------- Hero ---------- */
+  .hero{padding-top:64px;}
+  .hero-kicker{font-family:var(--mono);font-size:12px;color:var(--accent-cold);letter-spacing:0.08em;margin-bottom:14px;}
+  h1{font-size:32px;line-height:1.25;margin:0 0 10px 0;font-weight:600;letter-spacing:-0.01em;}
+  .hero-sub{color:var(--text-muted);font-size:16px;max-width:760px;line-height:1.55;margin-bottom:36px;}
+
+  /* Revision ledger */
+  .ledger{display:flex;border:1px solid var(--line);background:var(--bg-panel);}
+  .ledger-item{flex:1;padding:20px 18px;border-right:1px solid var(--line);position:relative;}
+  .ledger-item:last-child{border-right:none;background:rgba(92,200,232,0.05);}
+  .ledger-tag{font-family:var(--mono);font-size:11px;color:var(--text-dim);margin-bottom:8px;}
+  .ledger-item:last-child .ledger-tag{color:var(--accent-cold);}
+  .ledger-title{font-size:13px;font-weight:600;margin-bottom:6px;color:var(--text-primary);}
+  .ledger-desc{font-size:12.5px;color:var(--text-muted);line-height:1.5;}
+  .ledger-flag{display:inline-block;margin-top:8px;font-family:var(--mono);font-size:10.5px;color:var(--accent-flag);border:1px solid rgba(232,93,107,0.4);padding:2px 6px;background:rgba(232,93,107,0.08);}
+
+  /* ---------- Stat strip ---------- */
+  .stats{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:1px;background:var(--line);border:1px solid var(--line);margin-top:28px;}
+  .stat{background:var(--bg-panel);padding:22px 24px;}
+  .stat-label{font-family:var(--mono);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:10px;}
+  .stat-value{font-family:var(--mono);font-size:26px;font-weight:600;line-height:1;}
+  .stat-value.cold{color:var(--accent-cold);}
+  .stat-value.warm{color:var(--accent-warm);}
+  .stat-note{font-size:12px;color:var(--text-dim);margin-top:8px;line-height:1.5;}
+
+  /* ---------- Sections generic ---------- */
+  h2{font-size:22px;font-weight:600;margin:0 0 6px 0;}
+  .section-num{font-family:var(--mono);color:var(--accent-cold);font-size:13px;margin-right:8px;}
+  .lede{color:var(--text-muted);font-size:14.5px;line-height:1.65;max-width:820px;margin-bottom:28px;}
+  .panel{border:1px solid var(--line);background:var(--bg-panel);padding:22px;margin-bottom:22px;}
+  .panel-title{font-family:var(--mono);font-size:12px;color:var(--text-muted);margin-bottom:14px;text-transform:uppercase;letter-spacing:0.04em;}
+  .eq{font-family:var(--mono);font-size:15px;background:var(--bg-panel-raised);border-left:3px solid var(--accent-cold);padding:12px 16px;margin:14px 0;color:var(--text-primary);}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;}
+  @media (max-width:900px){.grid2{grid-template-columns:1fr;} .stats{grid-template-columns:1fr;} .ledger{flex-direction:column;} .ledger-item{border-right:none;border-bottom:1px solid var(--line);}}
+
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  th{text-align:left;font-family:var(--mono);font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.03em;padding:8px 10px;border-bottom:1px solid var(--line);}
+  td{padding:8px 10px;border-bottom:1px solid rgba(38,49,61,0.5);font-family:var(--mono);font-size:12.5px;}
+  tr:hover td{background:rgba(92,200,232,0.03);}
+  .sig{color:var(--accent-cold);}
+  .ns{color:var(--text-dim);}
+
+  .toggle-row{display:flex;gap:0;margin-bottom:16px;border:1px solid var(--line);width:fit-content;}
+  .toggle-btn{font-family:var(--mono);font-size:12px;padding:8px 16px;background:var(--bg-panel);color:var(--text-muted);border:none;cursor:pointer;border-right:1px solid var(--line);}
+  .toggle-btn:last-child{border-right:none;}
+  .toggle-btn.active{background:var(--accent-flag);color:#0A0E14;font-weight:600;}
+  .toggle-btn.active.corrected{background:var(--accent-cold);}
+
+  .callout{border-left:3px solid var(--accent-flag);background:rgba(232,93,107,0.06);padding:14px 18px;font-size:13.5px;line-height:1.6;color:var(--text-primary);margin:16px 0;}
+  .callout b{color:var(--accent-flag);}
+  .callout.good{border-left-color:var(--accent-cold);background:rgba(92,200,232,0.06);}
+  .callout.good b{color:var(--accent-cold);}
+
+  canvas{max-width:100%;}
+  .chart-wrap{background:var(--bg-panel-raised);padding:16px;border:1px solid var(--line);}
+
+  .filebrowser{font-family:var(--mono);font-size:13px;border:1px solid var(--line);background:var(--bg-panel);}
+  .fb-row{display:flex;justify-content:space-between;padding:9px 16px;border-bottom:1px solid rgba(38,49,61,0.5);color:var(--text-muted);}
+  .fb-row:last-child{border-bottom:none;}
+  .fb-row .fname{color:var(--text-primary);}
+  .fb-row .fdesc{color:var(--text-dim);font-family:var(--sans);font-size:12px;}
+
+  footer{padding:28px 48px;color:var(--text-dim);font-size:12px;font-family:var(--mono);}
+
+  .badge{display:inline-block;font-family:var(--mono);font-size:10.5px;padding:2px 7px;border:1px solid;margin-left:8px;vertical-align:middle;}
+  .badge.sig{color:var(--accent-cold);border-color:var(--accent-cold);}
+  .badge.ns{color:var(--text-dim);border-color:var(--text-dim);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav class="rail" id="rail">
+    <div class="rail-brand"><b>Dashboard</b>Physics-Anchored vs.<br>Data-Driven Extrapolation<br>Rev. 4 · Aug 2026</div>
+    <a href="#hero" class="active"><span class="rail-dot"></span>Overview</a>
+    <a href="#theory"><span class="rail-dot"></span>Theory (§4)</a>
+    <a href="#isolated"><span class="rail-dot"></span>Isolated test (§5)</a>
+    <a href="#applied"><span class="rail-dot"></span>Applied test (§6)</a>
+    <a href="#sensitivity"><span class="rail-dot"></span>Sensitivity (§6.6)</a>
+    <a href="#collinearity"><span class="rail-dot"></span>Collinearity (§7)</a>
+    <a href="#files"><span class="rail-dot"></span>Data &amp; code</a>
+  </nav>
+
+  <main>
+    <section class="hero" id="hero">
+      <div class="hero-kicker">RESEARCH DASHBOARD — SYNTHETIC-DATA PROOF-OF-CONCEPT</div>
+      <h1>Physics-Anchored vs. Data-Driven Extrapolation of<br>Superconducting-Qubit Dephasing Rates</h1>
+      <p class="hero-sub">An interactive companion to the manuscript. Every number below is pulled directly from the accompanying simulation code — nothing here is illustrative. The dashboard's own throughline is the same as the paper's: four revisions, three of them triggered by catching real errors in the earlier analysis.</p>
+
+      <div class="ledger">
+        <div class="ledger-item">
+          <div class="ledger-tag">REV. 1</div>
+          <div class="ledger-title">First draft</div>
+          <div class="ledger-desc">Single-seed extrapolation test. Reported a clean "reversal" at low-T1.</div>
+        </div>
+        <div class="ledger-item">
+          <div class="ledger-tag">REV. 2</div>
+          <div class="ledger-title">Citation audit</div>
+          <div class="ledger-desc">Two device-calibration citations didn't contain the numbers attributed to them.</div>
+          <div class="ledger-flag">2 citations fixed</div>
+        </div>
+        <div class="ledger-item">
+          <div class="ledger-tag">REV. 3</div>
+          <div class="ledger-title">Statistical rigor pass</div>
+          <div class="ledger-desc">20-seed testing revealed the "reversal" was noise. Math corrected (bias language, Taylor-remainder conflation).</div>
+          <div class="ledger-flag">1 finding overturned</div>
+        </div>
+        <div class="ledger-item">
+          <div class="ledger-tag">REV. 4 · CURRENT</div>
+          <div class="ledger-title">Critical statistical fix</div>
+          <div class="ledger-desc">A repeated-measures error in §7's OLS test was found and fixed — it had hidden a real, significant effect.</div>
+          <div class="ledger-flag">p=0.47 → p=0.021</div>
+        </div>
+      </div>
+
+      <div class="stats">
+        <div class="stat">
+          <div class="stat-label">Headline result</div>
+          <div class="stat-value cold">+19.7%</div>
+          <div class="stat-note">Physics-informed MSE reduction at the high-T1 device (sherbrooke), t(19)=13.7, <b>p&lt;0.0001</b>. Robust across all 20 seeds and all 21 sensitivity conditions tested.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Low-T1 device (osprey)</div>
+          <div class="stat-value warm">−2.5%</div>
+          <div class="stat-note">Mean effect, not significant on its own (p=0.51) — but a corrected per-seed collinearity test (§7) finds a real trend underneath, p=0.021.</div>
+        </div>
+        <div class="stat">
+          <div class="stat-label">Reproducibility</div>
+          <div class="stat-value">7 / 9</div>
+          <div class="stat-note">Reported results independently re-verified this revision. 2 could not be reproduced and were withdrawn (Appendix E).</div>
+        </div>
+      </div>
+    </section>
+
+    <section id="theory">
+      <h2><span class="section-num">§4</span>Bias-Variance Theory</h2>
+      <p class="lede">Anchoring a regression to the exact relation f(T1) = 1/(2T1) trades a small, real bias for variance that scales with the anchored quantity's own magnitude — valid as a <em>local</em> expansion, not a global one, since an unrestricted Gaussian technically permits the reciprocal to blow up.</p>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">Proposition 1 — local, leading order in σ</div>
+          <div class="eq">Bias ≈ f(T1) · σ²  (+0.64% at σ=0.08)</div>
+          <div class="eq">Var ≈ f(T1)² · σ²</div>
+          <p style="color:var(--text-muted);font-size:13px;line-height:1.6;">Verified by 5,000,000-draw Monte Carlo: 0.652% observed vs. 0.640% predicted bias. The singularity at 1+ε=0 sits 12.5σ from the mean (P≈3.7×10⁻³⁶) — never encountered in any simulation run in this paper.</p>
+        </div>
+        <div class="panel">
+          <div class="panel-title">Curvature error ≠ fitted-estimator bias</div>
+          <p style="color:var(--text-muted);font-size:13px;line-height:1.6;">An earlier draft implied Taylor's theorem gives the ridge estimator's bias directly. It doesn't — it only bounds the best <em>tangent-line</em> approximation. The actual fitted bias also depends on training distribution, regularization, and sample size.</p>
+          <table>
+            <tr><th>Test point</th><th>Exact 3-pt OLS bias</th><th>Taylor proxy</th></tr>
+            <tr><td>osprey (88.35µs)</td><td>−1.072×10⁻³</td><td>6.501×10⁻⁴</td></tr>
+            <tr><td>sherbrooke (262.69µs)</td><td>−7.355×10⁻⁴</td><td>1.093×10⁻³</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="isolated">
+      <h2><span class="section-num">§5</span>Isolated Mechanism Validation</h2>
+      <p class="lede">Single-variable Monte Carlo: does an exact analytic plug-in beat a linear surrogate fit on 3 real training devices, evaluated at two real held-out devices? Hover the chart — every point is a real simulated MSE, not interpolated for display.</p>
+      <div class="panel">
+        <div class="panel-title">MSE vs. test T1 — exact plug-in (cold) vs. linear surrogate (warm)</div>
+        <div class="chart-wrap"><canvas id="sweepChart" height="110"></canvas></div>
+      </div>
+      <div class="callout good"><b>Result —</b> the exact plug-in wins at both held-out devices by roughly an order of magnitude. The predicted variance ratio (8.84) matches the observed ratio (8.75) to within 1%.</div>
+    </section>
+
+    <section id="applied">
+      <h2><span class="section-num">§6</span>Applied Cross-Device Test — 20 Real Seeds</h2>
+      <p class="lede">Same comparison, now on synthetic telemetry parameterized by real IBM calibration data, trained on 3 Heron-class devices and tested on two held-out devices from different generations. Each dot below is one independent simulation seed — hover for its exact percent-change value.</p>
+      <div class="panel">
+        <div class="panel-title">Per-seed effect size — physics-informed % change vs. naive (N=20 each)</div>
+        <div class="chart-wrap"><canvas id="scatterChart" height="100"></canvas></div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">ibm_osprey (low-T1) <span class="badge ns">NOT SIGNIFICANT ALONE</span></div>
+          <table>
+            <tr><td>mean ± std</td><td>−2.5% ± 17.0%</td></tr>
+            <tr><td>95% CI</td><td>[−10.5%, +5.4%]</td></tr>
+            <tr><td>t(19), p</td><td>−0.665, p=0.514</td></tr>
+            <tr><td>Wilcoxon p</td><td>0.083</td></tr>
+            <tr><td>seeds favoring PI</td><td>12 / 20</td></tr>
+          </table>
+        </div>
+        <div class="panel">
+          <div class="panel-title">ibm_sherbrooke (high-T1) <span class="badge sig">SIGNIFICANT</span></div>
+          <table>
+            <tr><td>mean ± std</td><td>+19.7% ± 6.4%</td></tr>
+            <tr><td>95% CI</td><td>[+16.7%, +22.7%]</td></tr>
+            <tr><td>t(19), p</td><td>13.685, p&lt;0.0001</td></tr>
+            <tr><td>Wilcoxon p</td><td>&lt;0.0001</td></tr>
+            <tr><td>seeds favoring PI</td><td>20 / 20</td></tr>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="sensitivity">
+      <h2><span class="section-num">§6.6</span>Sensitivity Analysis — 21 Conditions</h2>
+      <p class="lede">Each of 7 synthetic-noise parameters swept across 3 levels, 20 seeds each (420 runs). An earlier draft claimed a "theory-corroborating exception" here — it didn't reproduce on fresh re-verification and was withdrawn. The real result is cleaner: 21 of 21 consistent, no exception.</p>
+      <div class="callout"><b>Corrected —</b> the originally-reported exception (osprey −11.6%, "significant", at 16% feature noise) does not reproduce. Verified value: −4.9%, p=0.194, not significant. See Appendix E.</div>
+      <div class="panel">
+        <div class="panel-title">All 21 conditions — osprey never significant, sherbrooke always significant</div>
+        <table id="sensTable">
+          <tr><th>Parameter</th><th>Value</th><th>osprey mean %</th><th>sherbrooke mean %</th></tr>
+        </table>
+      </div>
+    </section>
+
+    <section id="collinearity">
+      <h2><span class="section-num">§7</span>Collinearity Diagnostic — the Critical Fix</h2>
+      <p class="lede">Does decorrelating the two noisy training features change the outcome? The first analysis pooled 60 seed-condition points as if independent — but the same 15 seeds repeat across all 4 jitter levels, producing correlated (repeated-measures) data. Toggle below to see why that mattered.</p>
+      <div class="toggle-row">
+        <button class="toggle-btn active" id="btnInvalid" onclick="showMethod('invalid')">Pooled OLS (invalid)</button>
+        <button class="toggle-btn corrected" id="btnCorrected" onclick="showMethod('corrected')">Per-seed slope (corrected)</button>
+      </div>
+      <div class="panel">
+        <div class="panel-title" id="collTitle">Pooled OLS — treats 60 points as independent</div>
+        <div class="chart-wrap"><canvas id="collChart" height="90"></canvas></div>
+      </div>
+      <div id="collCalloutInvalid" class="callout"><b>Invalid —</b> osprey slope +0.0609, 95% CI [−0.107, +0.228], <b>p=0.470, not significant</b>. Same-seed runs at different jitter levels are strongly correlated (seed 2000: ≈6.0% at J=0 vs. ≈6.8% at J=60) — this violates the independence assumption OLS standard errors rely on.</div>
+      <div id="collCalloutCorrected" class="callout good" style="display:none;"><b>Corrected —</b> fitting one slope per seed (15 independent estimates) and testing their mean: osprey slope +0.0609 (same point estimate), 95% CI [+0.011, +0.111], <b>p=0.021, significant</b>. Sherbrooke: p=0.011. The bug didn't change what the data said — it changed how confident we were allowed to be about it.</div>
+    </section>
+
+    <section id="files">
+      <h2><span class="section-num">Repo</span>Data &amp; Code</h2>
+      <p class="lede">Everything above is generated by the scripts below — no step needs network access or a quantum-computing toolkit. See <code>src/CODE_README.md</code> for the exact run order.</p>
+      <div class="panel">
+        <div class="panel-title">/src</div>
+        <div class="filebrowser">
+          <div class="fb-row"><span class="fname">noise_simulation.py</span><span class="fdesc">full applied pipeline — §6, §7, Appendix A</span></div>
+          <div class="fb-row"><span class="fname">isolated_mechanism_demo.py</span><span class="fdesc">§5 isolated Monte Carlo validation</span></div>
+          <div class="fb-row"><span class="fname">audit_common.py</span><span class="fdesc">shared pipeline definitions, verified identical to main script</span></div>
+          <div class="fb-row"><span class="fname">scientific_audit_A_B.py</span><span class="fdesc">§4.2 exact-OLS-vs-Taylor; §5.2 lognormal check</span></div>
+          <div class="fb-row"><span class="fname">scientific_audit_C.py</span><span class="fdesc">§6.4 bootstrap CI / Wilcoxon</span></div>
+          <div class="fb-row"><span class="fname">scientific_audit_D.py</span><span class="fdesc">§6.6 21-condition sensitivity sweep</span></div>
+          <div class="fb-row"><span class="fname">scientific_audit_E_F.py</span><span class="fdesc">§6.5 interpolation; original (superseded) §7 pooled OLS</span></div>
+          <div class="fb-row"><span class="fname">scientific_audit_F_corrected.py</span><span class="fdesc">§7 corrected per-seed-slope analysis — current method</span></div>
+        </div>
+      </div>
+      <div class="grid2">
+        <div class="panel">
+          <div class="panel-title">/data</div>
+          <div class="filebrowser">
+            <div class="fb-row"><span class="fname">Table1_isolated_bias_variance.csv</span></div>
+            <div class="fb-row"><span class="fname">Table2_device_calibration_sources.csv</span></div>
+            <div class="fb-row"><span class="fname">Table3_multiseed_robustness.csv</span></div>
+            <div class="fb-row"><span class="fname">Table4_collinearity_diagnostic.csv</span></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-title">/paper</div>
+          <div class="filebrowser">
+            <div class="fb-row"><span class="fname">Physics_Anchored_Noise_Extrapolation_Paper_v13.docx</span></div>
+          </div>
+          <div class="panel-title" style="margin-top:18px;">/figures</div>
+          <div class="filebrowser">
+            <div class="fb-row"><span class="fname">6 core figures + 3 audit figures (.png)</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      Revision 4 · Aug 2026 · Synthetic-data proof-of-concept, no live quantum hardware accessed · See manuscript §9 (Limitations) and Appendix E (Reproducibility Check)
+    </footer>
+  </main>
+</div>
+
+<script>
+const DATA = {"perseed": {"osprey": {"naive_mse": [0.0001340385136549995, 6.795013756285352e-05, 8.770027601574645e-06, 3.617411729776001e-05, 1.879971549710999e-05, 3.132371693469771e-05, 3.127107458677237e-05, 6.820650183992523e-06, 0.00010791927216178136, 3.176204033150252e-05, 1.177687689254274e-05, 2.6560503435981193e-05, 0.00013655040151174585, 7.522365972955522e-06, 7.044230723034251e-05, 1.987328904001161e-05, 0.0005413021195706391, 1.3897994036802487e-05, 2.4002114252285548e-05, 8.185452221389777e-05], "pi_mse": [0.00012574950076275503, 6.19280902711243e-05, 1.0317505200113493e-05, 3.163041325963788e-05, 2.1126654764024375e-05, 2.858323853545044e-05, 3.208054605809333e-05, 9.339443116998904e-06, 0.00010213706638118178, 2.7584580323420102e-05, 1.1810663625963742e-05, 2.3803747422767214e-05, 0.0001310913126248671, 1.1075192791184253e-05, 8.252224354550185e-05, 1.8063128229990536e-05, 0.0005303585726879422, 1.6279228485641117e-05, 2.173751668677112e-05, 7.29026185911313e-05], "pct_change": [6.184053124894757, 8.862450478718845, -17.645071017347775, 12.560649374583313, -12.377523836847946, 8.74889274781948, -2.5885630155586843, -36.92892708260821, 5.357899163674401, 13.152366675698385, -0.2868904356332048, 10.37915572593942, 3.9978563420109414, -47.23017772602246, -17.148694854157178, 9.10851146167406, 2.021707746383358, -17.133655709831352, 9.434992024916253, 10.936358041860958]}, "sherbrooke": {"naive_mse": [1.0771117622366143e-05, 2.5332645318132075e-05, 2.7611041460710784e-05, 8.968068673568462e-06, 3.7964363618381706e-05, 2.3301759892733298e-05, 1.9225344679219238e-05, 2.6453721151905023e-05, 1.4702615024650744e-05, 1.2617662656162606e-05, 4.2875055984296685e-05, 1.1859229486833983e-05, 5.726910464046488e-05, 3.1396842564644935e-05, 0.00010376720439112666, 1.5625535647400584e-05, 1.4293724747777468e-05, 2.573714559512328e-05, 2.050368293439478e-05, 1.0724045223212827e-05], "pi_mse": [7.529757264102238e-06, 1.9958277616787006e-05, 2.279069723187043e-05, 7.580911054851292e-06, 3.142413509483167e-05, 1.898636286880625e-05, 1.528475761774592e-05, 2.0652029303106208e-05, 1.1804942959594698e-05, 8.30801262039314e-06, 3.885614647782878e-05, 8.791152850572835e-06, 4.92150692844405e-05, 2.8203846528712648e-05, 9.217529098054084e-05, 1.2598409649521789e-05, 1.0334826438346681e-05, 2.165242361596795e-05, 1.621877351340128e-05, 8.254516766108196e-06], "pct_change": [30.093073642917474, 21.215185519920084, 17.458031185457006, 15.467740816989192, 17.227283431621558, 18.519618448531066, 20.496834398671222, 21.931477297593784, 19.708548854729194, 34.15569232756897, 9.3735376297581, 25.870792361909352, 14.063490963561545, 10.169799811423797, 11.171076139714396, 19.372942254190043, 27.69675769813852, 15.870920743943381, 20.898242694758, 23.02795638868802]}}, "sweep": {"T1": [50.0, 54.53781512605042, 59.07563025210084, 63.61344537815126, 68.15126050420167, 72.68907563025209, 77.22689075630252, 81.76470588235294, 86.30252100840336, 90.84033613445378, 95.3781512605042, 99.91596638655463, 104.45378151260505, 108.99159663865547, 113.52941176470588, 118.0672268907563, 122.60504201680672, 127.14285714285714, 131.68067226890756, 136.21848739495798, 140.7563025210084, 145.29411764705884, 149.83193277310926, 154.36974789915968, 158.9075630252101, 163.4453781512605, 167.98319327731093, 172.52100840336135, 177.05882352941177, 181.5966386554622, 186.1344537815126, 190.67226890756302, 195.21008403361344, 199.74789915966386, 204.28571428571428, 208.8235294117647, 213.3613445378151, 217.89915966386553, 222.43697478991595, 226.97478991596637, 231.5126050420168, 236.05042016806723, 240.58823529411765, 245.12605042016807, 249.6638655462185, 254.2016806722689, 258.73949579831935, 263.2773109243698, 267.8151260504202, 272.3529411764706, 276.890756302521, 281.42857142857144, 285.96638655462186, 290.5042016806723, 295.0420168067227, 299.5798319327731, 304.11764705882354, 308.65546218487395, 313.1932773109244, 317.7310924369748], "mse_exact": [6.842584094465791e-07, 5.751282247770664e-07, 4.90166272577645e-07, 4.227292664402612e-07, 3.6830902982317014e-07, 3.2375900752357286e-07, 2.868289956608524e-07, 2.558753174396529e-07, 2.2967471587898432e-07, 2.0730161575161698e-07, 1.8804524318680763e-07, 1.7135246870091425e-07, 1.5678763806476382e-07, 1.4400385647938227e-07, 1.327221404132067e-07, 1.2271606661735552e-07, 1.138003220794122e-07, 1.058220618068501e-07, 9.865431423407935e-08, 9.219089799722459e-08, 8.63424667959279e-08, 8.103340504272375e-08, 7.619937139360527e-08, 7.178534011434502e-08, 6.774402822809964e-08, 6.40346239859174e-08, 6.06217524480913e-08, 5.7474628958115353e-08, 5.4566362493256524e-08, 5.187337931505164e-08, 4.937494375091343e-08, 4.7052757839694085e-08, 4.4890625349997234e-08, 4.287416860824332e-08, 4.099058885872461e-08, 3.9228462672101057e-08, 3.757756833559145e-08, 3.6028737283032655e-08, 3.45737265208213e-08, 3.320510872593916e-08, 3.191617727271324e-08, 3.070086391492803e-08, 2.955366723209172e-08, 2.846959026076438e-08, 2.7444085987764505e-08, 2.6473009592713635e-08, 2.555257650141227e-08, 2.4679325455841686e-08, 2.3850085926650477e-08, 2.3061949294214805e-08, 2.2312243308302708e-08, 2.1598509406891688e-08, 2.0918482534107835e-08, 2.027007314746636e-08, 1.9651351147143375e-08, 1.9060531496163238e-08, 1.8495961331186603e-08, 1.7956108389891105e-08, 1.7439550603459757e-08, 1.694496672202206e-08], "mse_lin": [2.6311918656196015e-05, 1.9078350499833227e-05, 1.3943588514950526e-05, 1.0245599678241085e-05, 7.552127627867208e-06, 5.573327540764919e-06, 4.1103931720477285e-06, 3.0242887759733413e-06, 2.216140572058555e-06, 1.6146143663971418e-06, 1.1676008810371167e-06, 8.366255137039432e-07, 5.930205884238584e-07, 4.1526114955873037e-07, 2.8708305374859857e-07, 1.9613580347781407e-07, 1.3300644064211127e-07, 9.050447566037376e-08, 6.313277042006155e-08, 4.6692423473584444e-08, 3.798524856691763e-08, 3.4588027622792837e-08, 3.4680028120175975e-08, 3.691037954903891e-08, 4.0295508703879874e-08, 4.4139406032452505e-08, 4.797134867594171e-08, 5.1497053326188366e-08, 5.4560220023991425e-08, 5.711215822141752e-08, 5.9187730148038615e-08, 6.088625423943783e-08, 6.235631915657519e-08, 6.3783692704829e-08, 6.538168859014287e-08, 6.7383491200204e-08, 7.00360446125297e-08, 7.359519432626998e-08, 7.83218343984433e-08, 8.447886294711867e-08, 9.232878854087805e-08, 1.0213186123723581e-07, 1.1414462680253522e-07, 1.2861882235313625e-07, 1.4580054738957152e-07, 1.6592965679324273e-07, 1.8923933247328287e-07, 2.159557985000863e-07, 2.46298151141916e-07, 2.8047828054681704e-07, 3.187008651324338e-07, 3.6116342325824527e-07, 4.080564096148296e-07, 4.595633460979821e-07, 5.158609788417509e-07, 5.771194546439368e-07, 6.435025112948221e-07, 7.151676773669031e-07, 7.922664778823072e-07, 8.749446429794795e-07], "train_range": [136.52, 188.55]}, "slopes": {"ibm_osprey": [0.012961823234745519, 0.06392931232892977, 0.22700319220469917, 0.23951541286711264, -0.00012759133649162914, 0.012203489369329745, 0.02529887885348483, -0.07653816165909476, -0.032608628990448967, 0.01395168613673082, 0.09437986980096298, 0.012697250392334452, 0.14236223065925832, 0.1370064233519496, 0.04158234682872067], "ibm_sherbrooke": [-0.1181845307835516, 0.06641181176471238, 0.3106120545116427, 0.3834878719351383, 0.31649717072139794, 0.14701425558234366, -0.33225166545411383, 0.21481946397076085, 0.1359108085635563, 0.24920786274392193, 0.10756664340787335, -0.0245214573952666, 0.20192316503301053, 0.6254938896490091, 0.25094167439038656]}};
+
+Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+Chart.defaults.color = '#7E8A99';
+Chart.defaults.borderColor = '#26313D';
+
+// ---- Sweep chart (§5) ----
+new Chart(document.getElementById('sweepChart'), {
+  type: 'line',
+  data: {
+    labels: DATA.sweep.T1.map(v => v.toFixed(0)),
+    datasets: [
+      {label:'Exact plug-in', data: DATA.sweep.mse_exact, borderColor:'#5CC8E8', backgroundColor:'transparent', pointRadius:0, borderWidth:2, tension:0.15},
+      {label:'Linear surrogate', data: DATA.sweep.mse_lin, borderColor:'#E8934A', backgroundColor:'transparent', pointRadius:0, borderWidth:2, tension:0.15},
+    ]
+  },
+  options: {
+    responsive:true,
+    interaction:{mode:'index', intersect:false},
+    scales:{
+      y:{type:'logarithmic', title:{display:true,text:'MSE (log scale)',color:'#7E8A99'}, grid:{color:'#1B2531'}},
+      x:{title:{display:true,text:'Test T1 (µs)',color:'#7E8A99'}, grid:{color:'#1B2531'}, ticks:{maxTicksLimit:10}}
+    },
+    plugins:{legend:{labels:{color:'#E8EDF2'}}}
+  }
+});
+
+// ---- Scatter chart (§6) ----
+const ospreyPts = DATA.perseed.osprey.pct_change.map((v,i)=>({x:0.9+Math.random()*0.2, y:v}));
+const sherbPts = DATA.perseed.sherbrooke.pct_change.map((v,i)=>({x:1.9+Math.random()*0.2, y:v}));
+new Chart(document.getElementById('scatterChart'), {
+  type:'scatter',
+  data:{datasets:[
+    {label:'ibm_osprey (LOW-T1)', data: ospreyPts, backgroundColor:'#E8934A', pointRadius:5},
+    {label:'ibm_sherbrooke (HIGH-T1)', data: sherbPts, backgroundColor:'#5CC8E8', pointRadius:5},
+  ]},
+  options:{
+    scales:{
+      x:{min:0.5,max:2.5, ticks:{callback:(v)=> v===1?'osprey':(v===2?'sherbrooke':''), color:'#7E8A99'}, grid:{color:'#1B2531'}},
+      y:{title:{display:true,text:'% change (PI vs. naive)',color:'#7E8A99'}, grid:{color:'#1B2531'}}
+    },
+    plugins:{
+      legend:{labels:{color:'#E8EDF2'}},
+      tooltip:{callbacks:{label:(ctx)=> `${ctx.dataset.label}: ${ctx.parsed.y.toFixed(2)}%`}}
+    }
+  }
+});
+
+// ---- Sensitivity table (verified data) ----
+const sensData = [
+  ["TLS rate (ev/hr)","0.05 / 0.15 / 0.30","−4.8 / −4.2 / −3.0","+29.8 / +17.4 / +8.3"],
+  ["QP rate (ev/hr)","0.02 / 0.08 / 0.20","+1.6 / −4.2 / −4.8","+16.3 / +17.4 / +18.1"],
+  ["Flux σ (fractional)","0.02 / 0.06 / 0.12","−4.3 / −4.2 / −3.8","+17.7 / +17.4 / +16.5"],
+  ["Thermal n̄","0.002 / 0.006 / 0.02","−4.2 / −4.2 / −4.1","+17.4 / +17.4 / +17.4"],
+  ["χ/κ ratio","0.1 / 0.3 / 0.6","−4.2 / −4.2 / −4.2","+17.4 / +17.4 / +17.4"],
+  ["Meas. noise (per-shot)","1% / 3% / 6%","−4.4 / −4.2 / −3.9","+17.5 / +17.4 / +17.1"],
+  ["Feature noise (calib.)","4% / 8% / 16%","−2.1 / −4.2 / −4.9","+17.5 / +17.4 / +17.2"],
+];
+const sensTable = document.getElementById('sensTable');
+sensData.forEach(row=>{
+  const tr = document.createElement('tr');
+  tr.innerHTML = `<td>${row[0]}</td><td>${row[1]}</td><td class="ns">${row[2]} (all ns)</td><td class="sig">${row[3]} (all SIG)</td>`;
+  sensTable.appendChild(tr);
+});
+
+// ---- Collinearity toggle chart (§7) ----
+let collChart;
+function buildCollChart(mode){
+  const ctx = document.getElementById('collChart');
+  if(collChart) collChart.destroy();
+  if(mode==='invalid'){
+    // Pooled view: show raw per-level means with (misleadingly tight) trend line
+    collChart = new Chart(ctx, {
+      type:'line',
+      data:{
+        labels:['0','15','30','60'],
+        datasets:[
+          {label:'osprey mean %', data:[-4.6,-3.8,-2.4,-1.1], borderColor:'#E8934A', backgroundColor:'#E8934A', pointRadius:6, borderWidth:2},
+          {label:'sherbrooke mean %', data:[18.7,25.4,34.2,29.1], borderColor:'#5CC8E8', backgroundColor:'#5CC8E8', pointRadius:6, borderWidth:2},
+        ]
+      },
+      options:{scales:{x:{title:{display:true,text:'T2 jitter std (µs)',color:'#7E8A99'},grid:{color:'#1B2531'}},y:{title:{display:true,text:'mean % change',color:'#7E8A99'},grid:{color:'#1B2531'}}},plugins:{legend:{labels:{color:'#E8EDF2'}}}}
+    });
+    document.getElementById('collTitle').textContent = 'Pooled OLS — treats 60 points as independent (p=0.470 at osprey)';
+  } else {
+    // Corrected view: show the 15 per-seed slopes as a strip plot per device
+    const ospreySlopes = DATA.slopes.ibm_osprey.map((v,i)=>({x:0.9+Math.random()*0.2,y:v}));
+    const sherbSlopes = DATA.slopes.ibm_sherbrooke.map((v,i)=>({x:1.9+Math.random()*0.2,y:v}));
+    collChart = new Chart(ctx, {
+      type:'scatter',
+      data:{datasets:[
+        {label:'osprey per-seed slope', data:ospreySlopes, backgroundColor:'#E8934A', pointRadius:6},
+        {label:'sherbrooke per-seed slope', data:sherbSlopes, backgroundColor:'#5CC8E8', pointRadius:6},
+      ]},
+      options:{scales:{
+        x:{min:0.5,max:2.5,ticks:{callback:(v)=>v===1?'osprey':(v===2?'sherbrooke':''),color:'#7E8A99'},grid:{color:'#1B2531'}},
+        y:{title:{display:true,text:'per-seed slope (pp / µs jitter)',color:'#7E8A99'},grid:{color:'#1B2531'}}
+      },plugins:{legend:{labels:{color:'#E8EDF2'}},tooltip:{callbacks:{label:(ctx)=>`slope: ${ctx.parsed.y.toFixed(4)}`}}}}
+    });
+    document.getElementById('collTitle').textContent = '15 independent per-seed slopes — mean tested vs. zero (p=0.021 at osprey)';
+  }
+}
+function showMethod(mode){
+  document.getElementById('btnInvalid').classList.toggle('active', mode==='invalid');
+  document.getElementById('btnCorrected').classList.toggle('active', mode==='corrected');
+  document.getElementById('collCalloutInvalid').style.display = mode==='invalid' ? 'block':'none';
+  document.getElementById('collCalloutCorrected').style.display = mode==='corrected' ? 'block':'none';
+  buildCollChart(mode);
+}
+buildCollChart('invalid');
+
+// ---- Scroll spy for left rail ----
+const sections = document.querySelectorAll('main section');
+const navLinks = document.querySelectorAll('.rail a');
+window.addEventListener('scroll', ()=>{
+  let current = sections[0].id;
+  sections.forEach(sec=>{ if(window.scrollY >= sec.offsetTop - 120) current = sec.id; });
+  navLinks.forEach(a=>{ a.classList.toggle('active', a.getAttribute('href')==='#'+current); });
+});
+</script>
+</body>
+</html>
